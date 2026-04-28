@@ -1,5 +1,5 @@
 import type { Reducer, Dispatch, ReducerAction } from 'react';
-import { createContext, useReducer, useState, useEffect, useCallback } from 'react';
+import { createContext, useReducer, useEffect, useCallback } from 'react';
 import { pick, union, isEqual } from 'lodash';
 import { createSelector } from 'reselect';
 import { useActivePerspective } from '@console/dynamic-plugin-sdk';
@@ -128,9 +128,8 @@ const useTranslatedTourExtensions = () => {
 
 export const useTourValuesForContext = (): TourContextType => {
   const [activePerspective] = useActivePerspective();
-  const [perspective, setPerspective] = useState<string>(activePerspective);
   const tourExtension = useTranslatedTourExtensions();
-  const tour = tourExtension.find(({ properties }) => properties.perspective === perspective);
+  const tour = tourExtension.find(({ properties }) => properties.perspective === activePerspective);
   const selectorSteps = tour?.properties?.tour?.steps ?? [];
   const flags = useConsoleSelector(
     (state) => getRequiredFlagsByTour(state, selectorSteps),
@@ -152,11 +151,10 @@ export const useTourValuesForContext = (): TourContextType => {
   });
 
   useEffect(() => {
-    tourDispatch({ type: TourActions.initialize, payload: { completed } });
-    setPerspective(activePerspective);
-    // only run effect when the active perspective changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePerspective, loaded]);
+    if (loaded) {
+      tourDispatch({ type: TourActions.initialize, payload: { completed } });
+    }
+  }, [activePerspective, completed, loaded]);
 
   if (!tour || !loaded) return { tour: null };
   const {
