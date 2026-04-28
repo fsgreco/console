@@ -139,6 +139,25 @@ describe('guided-tour-context', () => {
       expect(tour).toEqual(null);
       expect(totalSteps).toEqual(undefined);
     });
+
+    it('should not re-show tour when completed changes', () => {
+      useSelectorMock.mockReturnValue({ A: true, B: false });
+      useResolvedExtensionsMock.mockReturnValue(mockTourExtension);
+      // Step 1: Mount with loaded: true, completed: false
+      useUserPreferenceMock.mockReturnValue([{ dev: { completed: false } }, () => null, true]);
+      const { result, rerender } = renderHook(() => useTourValuesForContext());
+      expect(result.current.tourState.startTour).toBe(true);
+      expect(result.current.tourState.completedTour).toBe(false);
+
+      // Step 2: now completed becomes true, loaded stays true
+      // before fix: effect does not re-fire (loaded remain unchanged and `completed` was not in deps array)
+      // now: effect re-fires (completed is in dependency array) and sets startTour: false
+      useUserPreferenceMock.mockReturnValue([{ dev: { completed: true } }, () => null, true]);
+      rerender();
+
+      expect(result.current.tourState.startTour).toBe(false);
+      expect(result.current.tourState.completedTour).toBe(true);
+    });
   });
 
   describe('useTourStatePerspective', () => {
